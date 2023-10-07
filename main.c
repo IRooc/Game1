@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "libs/raylib.h"
 
-#define NROFCELLS  20
+#define NROFCELLS  30
 
 static float dt;
 int screenWidth = 800;
@@ -25,11 +25,32 @@ typedef struct {
 Shape s1 = {
     .items = {
         {0,0,0,0},
-        {0,0,0,3},
+        {0,0,0,2},
         {2,2,1,2},
         {0,0,0,0}
     }
 };
+
+Shape RotateShape(Shape s) {
+    int n = 4;
+    // Transpose the s.items
+    for (int i = 0; i < n; i++) {
+        for (int j = i; j < n; j++) {
+            int temp = s.items[i][j];
+            s.items[i][j] = s.items[j][i];
+            s.items[j][i] = temp;
+        }
+    }
+    // Reverse the columns
+    for (int i = 0; i < n; i++) {
+        for (int j = 0, k = n - 1; j < k; j++, k--) {
+            int temp = s.items[j][i];
+            s.items[j][i] = s.items[k][i];
+            s.items[k][i] = temp;
+        }
+    }
+    return s;
+}
 
 void DrawShape(Shape s, int gridX, int gridY, bool picked) {
     int offsetX = 0;
@@ -77,6 +98,10 @@ int main(void) {
         screenHeight = GetRenderHeight();
         cellWidth = screenWidth / 40;
         mpos = GetMousePosition();
+
+        if (IsKeyReleased(KEY_R)) {
+            s1 = RotateShape(s1);
+        }
 
         BeginDrawing();
         ClearBackground(DARKGRAY);
