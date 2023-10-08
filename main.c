@@ -134,18 +134,7 @@ int main(void) {
         BeginDrawing();
         ClearBackground(DARKGRAY);
         DrawText("Game1", 200, 10, 10, WHITE);
-        for(int x = 0; x < NROFCELLS; x++) {
-            for(int y = 0; y < NROFCELLS; y ++) {
-                int xpos = x*cellWidth + gridOffset;
-                int ypos = y*cellWidth + gridOffset;
-
-				if (CheckCollisionPointRec(mpos, CLITERAL(Rectangle){xpos, ypos, cellWidth-1, cellWidth})) {
-                    DrawShape(s1, x, y, IsMouseButtonReleased(MOUSE_LEFT_BUTTON));
-                    break;
-				}
-            }
-        }
-        for(int x = 0; x < NROFCELLS; x++) {
+       for(int x = 0; x < NROFCELLS; x++) {
             for(int y = 0; y < NROFCELLS; y ++) {
                 int xpos = x*cellWidth + gridOffset;
                 int ypos = y*cellWidth + gridOffset;
@@ -163,7 +152,17 @@ int main(void) {
 
             }
         }
-        //DrawShape(s1, mpos);
+         for(int x = 0; x < NROFCELLS; x++) {
+            for(int y = 0; y < NROFCELLS; y ++) {
+                int xpos = x*cellWidth + gridOffset;
+                int ypos = y*cellWidth + gridOffset;
+
+				if (CheckCollisionPointRec(mpos, CLITERAL(Rectangle){xpos, ypos, cellWidth-1, cellWidth})) {
+                    DrawShape(s1, x, y, IsMouseButtonReleased(MOUSE_LEFT_BUTTON));
+                    break;
+				}
+            }
+        }
         EndDrawing();
     }
 
