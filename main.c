@@ -1,27 +1,26 @@
 #include <stdio.h>
 #include "libs/raylib.h"
 
-#define NROFCELLS  30
+#define NROFCELLS  20
 
 static float dt;
 int screenWidth = 800;
 int screenHeight = 600;
-int cellWidth = 40;
-int halfCellWidth = 10;
 int gridOffset = 20;
 
-Vector2 mpos = {0};
+int cellWidth = 0; //calculated every tick
 
 typedef struct {
     int fields[NROFCELLS][NROFCELLS];
 } Board;
 
-Board board = {0};
-
 typedef struct {
     int items[4][4];
 } Shape;
 
+
+Vector2 mpos = {0};
+Board board = {0};
 Shape s1 = {
     .items = {
         {0,0,0,0},
@@ -70,18 +69,47 @@ void DrawShape(Shape s, int gridX, int gridY, bool picked) {
     if (picked) {
         TraceLog(LOG_INFO, "picked");
     }
+    bool allowed = true;
+    //check if its allowed
+    for(int x = 0; x < 4; x++) {
+        for(int y = 0; y < 4; y++) {
+            if (s.items[y][x]) {
+                int cellGridX = gridX + x - offsetX;
+                int cellGridY = gridY + y - offsetY;
+
+                if (board.fields[cellGridX][cellGridY]){
+                    allowed = false;
+                    break;
+                }
+                //todo: empty rows/columns in shape
+                if (gridX - offsetX < 0) {
+                    allowed = false;
+                    break;
+                }
+                if (gridY - offsetY < 0) {
+                    allowed = false;
+                    break;
+                }
+            }
+        }
+    }
+
 
     for(int x = 0; x < 4; x++) {
         for(int y = 0; y < 4; y++) {
-            int xpos = gridX*cellWidth + x*cellWidth - offsetX*cellWidth + gridOffset;
-            int ypos = gridY*cellWidth + y*cellWidth - offsetY*cellWidth + gridOffset;
             if (s.items[y][x]) {
-                if (picked && (gridX + x - offsetX < NROFCELLS) && (gridY + y - offsetY < NROFCELLS)) {
-                    board.fields[gridX + x - offsetX][gridY + y - offsetY] = 1;
+                int cellGridX = gridX + x - offsetX;
+                int cellGridY = gridY + y - offsetY;
+                if (allowed && picked && (cellGridX < NROFCELLS) && (cellGridX < NROFCELLS)) {
+                    board.fields[cellGridX][cellGridY] = 1;
                 }
-                DrawRectangle(xpos, ypos, cellWidth, cellWidth, cellColor);
+
+                int xpos = cellGridX*cellWidth;
+                int ypos = cellGridY*cellWidth;
+                DrawRectangle(xpos + gridOffset, ypos + gridOffset, cellWidth, cellWidth, allowed ? cellColor : PINK);
             }
         }
+
     }
 }
 
@@ -111,7 +139,7 @@ int main(void) {
                 int xpos = x*cellWidth + gridOffset;
                 int ypos = y*cellWidth + gridOffset;
 
-				if (CheckCollisionPointRec(mpos, CLITERAL(Rectangle){xpos, ypos, cellWidth, cellWidth})) {
+				if (CheckCollisionPointRec(mpos, CLITERAL(Rectangle){xpos, ypos, cellWidth-1, cellWidth})) {
                     DrawShape(s1, x, y, IsMouseButtonReleased(MOUSE_LEFT_BUTTON));
                     break;
 				}
