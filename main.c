@@ -8,15 +8,6 @@
 #define LINECOLOR CLITERAL(Color){ 0, 0, 255, 80}
 #define ARRAY_LEN(a) sizeof((a))/sizeof((a)[0])
 
-static float dt;
-int screenWidth = 800;
-int screenHeight = 600;
-float speedX = 1;
-float speedY = 1;
-float speedFactor = 0.01;
-float boxFactor = 0.01;
-
-int cellWidth = 0; //calculated every tick
 
 typedef struct {
     int items[SHAPESIZE][SHAPESIZE];
@@ -39,6 +30,7 @@ typedef struct {
     float flipTime;
     float currentTime;
 } EnemyWave;
+
 Shape enemyTemplate = {
     .items = {
         {3,0,3,0,3},
@@ -60,9 +52,20 @@ Shape player = {
     },
     .pos = {0}
 };
-EnemyWave wave = {0};
 
+EnemyWave wave = {0};
 Bullet bullets[MAX_BULLETS];
+int score = 0;
+float dt;
+int screenWidth = 800;
+int screenHeight = 600;
+float speedX = 1;
+float speedY = 1;
+float speedFactor = 0.01;
+float boxFactor = 0.01;
+
+int cellWidth = 0; //calculated every tick
+double gametime = 0;
 
 void StartNewEnemyWave() {
     memset(&wave, 0, sizeof(wave));
@@ -86,7 +89,7 @@ void DrawShape(Shape shape, Vector2 offset) {
 
     for (int x = 0; x < SHAPESIZE; x++) {
         for (int y = 0; y < SHAPESIZE; y++) {
-            Color c = BLACK;
+            Color c = BLANK;
             switch (shape.items[y][x])
             {
                 case 1: c = RED; break;
@@ -120,7 +123,6 @@ bool SpawnBullet(Vector2 pos, Vector2 speed, Color color) {
     }
     return false;
 }
-double gametime = 0;
 
 int main(void) {
     Color gridColor = CLITERAL(Color){ 180, 41, 55, 255 };
@@ -150,6 +152,7 @@ int main(void) {
         if (IsKeyPressed(KEY_R)) {
             player.pos.x = screenWidth*0.05;
             player.active = true;
+            score = 0;
         }
 
         // Player movement
@@ -170,7 +173,7 @@ int main(void) {
             if (player.pos.y  > screenHeight - SHAPESIZE*cellWidth) player.pos.y = screenHeight - SHAPESIZE*cellWidth;
         }
 
-        //Bullets
+        // Bullets
         for (int i = 0; i < MAX_BULLETS; i++){
             if (bullets[i].active) {
                 bullets[i].pos.x += bullets[i].speed.x;
@@ -194,6 +197,7 @@ int main(void) {
                                         })){
                                 wave.enemies[e].active = false;
                                 bullets[i].active = false;
+                                score += 10;
                             }
                         }
                     }
@@ -222,12 +226,13 @@ int main(void) {
                 }
             }
         }
+
         bool firedBullet = true;
         if (player.active && IsKeyPressed (KEY_SPACE)) {
             firedBullet = SpawnBullet(player.pos, CLITERAL(Vector2){ 0, -speedY}, BLUE);
         }
 
-        //enemies
+        // Enemies
         bool enemiesPresent = false;
         for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
             if (wave.enemies[i].active) {
@@ -240,7 +245,6 @@ int main(void) {
         }
 
         if (enemiesPresent) {
-            wave.currentTime = 0;
             wave.pos.x += wave.speed.x;
             wave.pos.y += wave.speed.y;
             if (wave.pos.x < screenWidth*0.2 || wave.pos.x > screenWidth*0.4) {
@@ -248,43 +252,36 @@ int main(void) {
             }
         }
 
-        //RENDERING
+        // RENDERING
         BeginDrawing();
         ClearBackground(BLACK);
 
+        DrawText(TextFormat("SCORE %3i", score), 20, 20, 40, LIGHTGRAY);
 
         for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
             if (wave.enemies[i].active) {
                 DrawShape(wave.enemies[i], wave.pos);
             }
         }
+
         if (player.active) {
             DrawShape(player, CLITERAL(Vector2){0,0});
             if (!enemiesPresent) {
-
-                DrawText("PRESS 'Q' TO START", 50, 50, 50, GREEN);
+                DrawText("PRESS 'Q' TO START", 50, 100, 50, GREEN);
             }
         } else {
-            DrawText("YOU DIED,\nPRESS 'R' TO RESTART", 50, 50, 50, RED);
+            DrawText("YOU DIED,\nPRESS 'R' TO RESTART", 50, 100, 50, RED);
         }
 
-        //draw bullets
+        // Draw bullets
         for (int i = 0; i < MAX_BULLETS; i++){
             if (bullets[i].active) {
                 DrawRectangle(bullets[i].pos.x,bullets[i].pos.y,cellWidth, cellWidth, bullets[i].color);
             }
         }
 
-        //draw grid
-        for (int i = 0; i < screenWidth+cellWidth/cellWidth; i++) {
-            DrawLine(i*cellWidth, 0, i*cellWidth, screenHeight, LINECOLOR);
-        }
-        for (int i = 0; i < screenHeight+cellWidth/cellWidth; i++) {
-            DrawLine(0, i*cellWidth, screenWidth, i*cellWidth, LINECOLOR);
-        }
-
         if (!firedBullet) {
-            DrawText("FAILED TO FIRE BULLET", 50, 50, 50, RED);
+            TraceLog(LOG_ERROR, "FAILED TO FIRE BULLET");
         }
 
         EndDrawing();
