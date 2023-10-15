@@ -43,7 +43,7 @@ Shape enemyTemplate = {
     .items = {
         {3,0,3,0,3},
         {3,3,1,3,3},
-        {3,3,1,3,3},
+        {3,2,1,2,3},
         {3,3,3,3,3},
         {0,0,3,0,0}
 
@@ -69,19 +69,16 @@ void StartNewEnemyWave() {
 
     wave.pos.x = screenWidth * 0.25;
     wave.pos.y = 10;
-    wave.speed.x = 50*speedFactor;
+    wave.speed.x = 100*speedFactor;
     wave.speed.y = 0;
-    wave.flipTime = 5;
+    wave.flipTime = 10;
     wave.currentTime = 0;
     for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
         Shape* enemy = &wave.enemies[i];
-        //just 4 for now
-        if (i < 4) {
-            enemy->active = true;
-            memcpy(&enemy->items, &enemyTemplate.items, sizeof(enemy->items));
-            enemy->pos.x = wave.pos.x + i*SHAPESIZE*cellWidth*2.1;
-            enemy->pos.y = wave.pos.y;
-        }
+        enemy->active = true;
+        memcpy(&enemy->items, &enemyTemplate.items, sizeof(enemy->items));
+        enemy->pos.x = wave.pos.x + (i%4)*SHAPESIZE*cellWidth*2.1;
+        enemy->pos.y = wave.pos.y + (i/4)*SHAPESIZE*cellWidth*2.1;
     }
 }
 
@@ -127,6 +124,7 @@ int main(void) {
     screenHeight = GetRenderHeight();
     cellWidth = screenWidth * boxFactor;
     player.pos.y = screenHeight - SHAPESIZE*cellWidth;
+    player.active = true;
 
     while(!WindowShouldClose()) {
         dt = GetFrameTime();
@@ -136,9 +134,14 @@ int main(void) {
         cellWidth = screenWidth * boxFactor;
         speedX = screenWidth * speedFactor;
         speedY = screenHeight * speedFactor;
+        wave.currentTime += dt;
 
         if (IsKeyPressed(KEY_Q)) {
             StartNewEnemyWave();
+        }
+        if (IsKeyPressed(KEY_R)) {
+            StartNewEnemyWave();
+            player.active = true;
         }
 
         // Player movement
@@ -164,13 +167,56 @@ int main(void) {
             if (bullets[i].active) {
                 bullets[i].pos.x += bullets[i].speed.x;
                 bullets[i].pos.y += bullets[i].speed.y;
+
+                if (bullets[i].speed.y < 0) {
+                    //player bullet
+
+                    for(int e = 0; e < ARRAY_LEN(wave.enemies); e++) {
+                        if (wave.enemies[e].active) {
+                            if (CheckCollisionRecs(CLITERAL(Rectangle){
+                                        bullets[i].pos.x,
+                                        bullets[i].pos.y,
+                                        cellWidth,
+                                        cellWidth
+                                        },
+                                        CLITERAL(Rectangle){
+                                        wave.enemies[e].pos.x,
+                                        wave.enemies[e].pos.y,
+                                        SHAPESIZE*cellWidth,
+                                        SHAPESIZE*cellWidth,
+                                        })){
+                                wave.enemies[e].active = false;
+                                bullets[i].active = false;
+                            }
+                        }
+                    }
+
+                } else if (bullets[i].speed.y > 0) {
+                    if (CheckCollisionRecs(CLITERAL(Rectangle){
+                                bullets[i].pos.x,
+                                bullets[i].pos.y,
+                                cellWidth,
+                                cellWidth
+                                },
+                                CLITERAL(Rectangle){
+                                player.pos.x,
+                                player.pos.y,
+                                SHAPESIZE*cellWidth,
+                                SHAPESIZE*cellWidth,
+                                })){
+                        player.active = false;
+                        bullets[i].active = false;
+                    }
+
+                }
+
                 if (bullets[i].pos.y < 0 || bullets[i].pos.y > screenHeight) {
                     bullets[i].active = false;
                 }
             }
         }
         bool firedBullet = true;
-        if (IsKeyPressed (KEY_SPACE)) {
+        if (player.active && IsKeyPressed (KEY_SPACE)) {
             firedBullet = SpawnBullet(player.pos, CLITERAL(Vector2){ 0, -speedY}, BLUE);
        }
 
@@ -180,8 +226,8 @@ int main(void) {
             if (wave.enemies[i].active) {
                 wave.enemies[i].pos.x += wave.speed.x;
                 wave.enemies[i].pos.y += wave.speed.y;
-                wave.currentTime += dt;
                 enemiesPresent = true;
+                //fire bullet sometimes
                 if (GetRandomValue(0,100) == 8) {
                     SpawnBullet(wave.enemies[i].pos, CLITERAL(Vector2){ 0, speedY}, RED);
                 }
@@ -193,17 +239,25 @@ int main(void) {
             wave.speed.x = -wave.speed.x;
         }
 
-
         //RENDERING
         BeginDrawing();
         ClearBackground(BLACK);
+
 
         for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
             if (wave.enemies[i].active) {
                 DrawShape(wave.enemies[i]);
             }
         }
-        DrawShape(player);
+        if (player.active) {
+            DrawShape(player);
+            if (!enemiesPresent) {
+
+                DrawText("PRESS 'R' TO START", 50, 50, 50, GREEN);
+            }
+        } else {
+            DrawText("YOU DIED,\nPRESS 'R' TO RESTART", 50, 50, 50, RED);
+        }
 
         //draw bullets
         for (int i = 0; i < MAX_BULLETS; i++){
