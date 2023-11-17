@@ -56,6 +56,7 @@ Shape player = {
 EnemyWave wave = {0};
 Bullet bullets[MAX_BULLETS];
 int score = 0;
+int wavenumber = 0;
 float dt;
 int screenWidth = 800;
 int screenHeight = 600;
@@ -69,6 +70,7 @@ double gametime = 0;
 
 void StartNewEnemyWave() {
     memset(&wave, 0, sizeof(wave));
+    wavenumber++;
 
     wave.pos.x = screenWidth * 0.25;
     wave.pos.y = 10;
@@ -152,7 +154,9 @@ int main(void) {
         if (IsKeyPressed(KEY_R)) {
             player.pos.x = screenWidth*0.05;
             player.active = true;
+            wavenumber = 0;
             score = 0;
+            StartNewEnemyWave();
         }
 
         // Player movement
@@ -238,7 +242,7 @@ int main(void) {
             if (wave.enemies[i].active) {
                 enemiesPresent = true;
                 //fire bullet sometimes
-                if (GetRandomValue(0,100) == 8) {
+                if (GetRandomValue(0,500) < wavenumber) {
                     SpawnBullet(AddVector2(wave.pos, wave.enemies[i].pos), CLITERAL(Vector2){ 0, speedY}, RED);
                 }
             }
@@ -256,7 +260,6 @@ int main(void) {
         BeginDrawing();
         ClearBackground(BLACK);
 
-        DrawText(TextFormat("SCORE %3i", score), 20, 20, 40, LIGHTGRAY);
 
         for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
             if (wave.enemies[i].active) {
@@ -267,11 +270,13 @@ int main(void) {
         if (player.active) {
             DrawShape(player, CLITERAL(Vector2){0,0});
             if (!enemiesPresent) {
-                DrawText("PRESS 'Q' TO START", 50, 100, 50, GREEN);
+                DrawText("PRESS 'Q' TO START", 50, 120, 50, GREEN);
             }
         } else {
-            DrawText("YOU DIED,\nPRESS 'R' TO RESTART", 50, 100, 50, RED);
+            DrawText("YOU DIED,\nPRESS 'R' TO RESTART", 50, 120, 50, RED);
         }
+        DrawText(TextFormat("SCORE %3i", score), 20, 20, 40, LIGHTGRAY);
+        DrawText(TextFormat("WAVE %3i", wavenumber), 20, 60, 40, LIGHTGRAY);
 
         // Draw bullets
         for (int i = 0; i < MAX_BULLETS; i++){
