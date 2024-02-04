@@ -1,16 +1,62 @@
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Game1</title>
+    <style>
+        body {
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;  
+        }
+        #game {
+            max-width: 96vw;
+        }
+        #touchcontrols {  
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        #touchcontrols button {
+            padding: 20px 30px;
+            height: 60px;
+            width: 100px;
+        }
+    </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
     <canvas id="game"></canvas>
-    <button onclick="stop=true">Stop</button>
-    <button onclick="start()">Start</button>
     <br/>
+    <section id="touchcontrols">
+        <button ontouchstart="window.onkeydown({keyCode:65 })" ontouchend="window.onkeyup({keyCode:65 })">A</button><button ontouchstart="window.onkeydown({keyCode:68 })" ontouchend="window.onkeyup({keyCode:68 })">D</button>  <button ontouchstart="window.onkeydown({keyCode:32 })" ontouchend="window.onkeyup({keyCode:32 })">SPACE</button>  
+        <br/>
+        <br/>
+        <br/>
+        <button ontouchstart="window.onkeydown({keyCode:82 })" ontouchend="window.onkeyup({keyCode:82 })">R</button>
+        <button ontouchstart="window.onkeydown({keyCode:81 })" ontouchend="window.onkeyup({keyCode:81 })">Q</button>
+    </section>
     <p>Use WASD to move and SPACE to fire</p>
+    <section id="debug">
+        DEBUG<br/>
+        <button onclick="stop=true">Pause</button>
+        <button onclick="start()">Continue</button>
+    </section>
+    
     <h2>Based on Tsodings raylib.js setup</h2>
     <p>See his repo/videos <a href="https://github.com/tsoding/raylib.js">tsoding/raylib.js</a> <a href="https://www.youtube.com/@TsodingDaily">youtube.com/@TsodingDaily</a> (video not uploaded yet) for the explanation</p>
     <script>
+        function propagateTouchEvent(event, eventName) {
+           event.preventDefault();
+           const newEvent = new Event(eventName, { "bubbles": true, "cancelable": true });
+           newEvent.touches = [];
+           newEvent.touches.push({ 'pageX': event.clientX, 'pageY': event.clientY });
+           event.target.dispatchEvent(newEvent);
+        }
+    
+        //mouseup event propagated to touchstart, touchend
+        document.addEventListener('mousedown', (event) => propagateTouchEvent(event, 'touchstart'));
+        document.addEventListener('mouseup', (event) => propagateTouchEvent(event, 'touchend'));
     
         const canvas = document.getElementById("game");
         ctx = canvas.getContext("2d");
@@ -71,6 +117,7 @@
             stop = false;
             function first(timestamp) {
                 pressedKeys = {};
+                downKeys = {};
                 previous = timestamp;
                 window.requestAnimationFrame(next)
             }
