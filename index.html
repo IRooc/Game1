@@ -6,6 +6,10 @@
     <canvas id="game"></canvas>
     <button onclick="stop=true">Stop</button>
     <button onclick="start()">Start</button>
+    <br/>
+    <p>Use WASD to move and SPACE to fire</p>
+    <h2>Based on Tsodings raylib.js setup</h2>
+    <p>See his repo/videos <a href="https://github.com/tsoding/raylib.js">tsoding/raylib.js</a> <a href="https://www.youtube.com/@TsodingDaily">youtube.com/@TsodingDaily</a> (video not uploaded yet) for the explanation</p>
     <script>
     
         const canvas = document.getElementById("game");
@@ -15,6 +19,7 @@
         window.onkeyup = function(e) { downKeys[e.keyCode] = false; pressedKeys[e.keyCode] = true; }
         window.onkeydown = function(e) { downKeys[e.keyCode] = true; }
     
+        //1 to 1 copies from @tsodings repo https://github.com/tsoding/raylib.js
         function make_environment(...envs) {
             return new Proxy(envs, {
                 get(target, prop, receiver) {
@@ -34,23 +39,20 @@
                 ptr++;
             }
             return len;
-        }
-        
+        }        
         function cstr_by_ptr(mem_buffer, ptr) {
             const mem = new Uint8Array(mem_buffer);
             const len = cstrlen(mem, ptr);
             const bytes = new Uint8Array(mem_buffer, ptr, len);
             return new TextDecoder().decode(bytes);
-        }
-        
+        }        
         function color_hex_unpacked(r, g, b, a) {
             r = r.toString(16).padStart(2, '0');
             g = g.toString(16).padStart(2, '0');
             b = b.toString(16).padStart(2, '0');
             a = a.toString(16).padStart(2, '0');
             return "#"+r+g+b+a;
-        }
-        
+        }        
         function color_hex(color) {
             const r = ((color>>(0*8))&0xFF).toString(16).padStart(2, '0');
             const g = ((color>>(1*8))&0xFF).toString(16).padStart(2, '0');
@@ -126,21 +128,22 @@
                     //console.log('draw text',txt_ptr, txt, x, y, size, color_ptr);
                     const [r, g, b, a] = new Uint8Array(buffer, color_ptr, 4);
                     ctx.fillStyle = color_hex_unpacked(r, g, b, a);
+                    //TODO: not correct but works for now
                     ctx.font = `${size}px Arial, Sans`;
-                    ctx.fillText(txt, x, y);
+                    ctx.fillText(txt, x, y + 20); //some offset apparently needed for text TODO look into this
                 },
                 TextFormat: (txt_ptr, ...args) => {
                     if (txt_ptr) {
                         const buffer = wasm.instance.exports.memory.buffer;
                         let txt =  cstr_by_ptr(buffer, txt_ptr);;
                         const [r] = new Uint8Array(buffer, args, args.length);
-                        //console.log('frmt', txt, r);
-                        txt = txt.replace('%3i', r);
+                        // OK we probably need more printf formatting than this but...
+                        txt = txt.replace('%3i', (''+r).padStart(3, 0));
                         
                         // Encode the string in utf-8.
                         const encoder = new TextEncoder()
                         const bytes = encoder.encode(txt)
-                        // Reuse the base pointer 0, will not scale
+                        // Reuse the base pointer 0, TODO: will not scale
                         const buffer2 = new Uint8Array(wasm.instance.exports.memory.buffer, 0, bytes.byteLength + 1)
                         buffer2.set(bytes)
                         buffer2[bytes.byteLength] = 0;
