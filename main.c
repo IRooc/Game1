@@ -278,7 +278,7 @@ void game_frame() {
     
     // RENDERING
     BeginDrawing();
-        ClearBackground((Color){20, 20, 20, 255});
+    ClearBackground((Color){20, 20, 20, 255});
     
     
     for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
@@ -292,9 +292,9 @@ void game_frame() {
         if (!enemiesPresent) {
             DrawText("PRESS 'Q' TO START", 50, 120, 50, GREEN);
         }
-        } else {
+    } else {
         DrawText("YOU DIED,\n\n\nPRESS 'R' TO RESTART", 50, 120, 50, RED);
-        }
+    }
     DrawText(TextFormat("SCORE %3i", score), 20, 20, 40, LIGHTGRAY);
     DrawText(TextFormat("WAVE %3i", wavenumber), 20, 60, 40, LIGHTGRAY);
     
@@ -307,7 +307,7 @@ void game_frame() {
     
     if (!firedBullet) {
         TraceLog(LOG_ERROR, "FAILED TO FIRE BULLET");
-        }
+    }
     
     EndDrawing();
 }

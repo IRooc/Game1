@@ -122,14 +122,32 @@
                 },
                 DrawText: (txt_ptr, x, y, size, color_ptr) => {
                     const buffer = wasm.instance.exports.memory.buffer;
-                    const txt =  cstr_by_ptr(buffer, txt_ptr);;
+                    const txt =  cstr_by_ptr(buffer, txt_ptr);
                     //console.log('draw text',txt_ptr, txt, x, y, size, color_ptr);
                     const [r, g, b, a] = new Uint8Array(buffer, color_ptr, 4);
                     ctx.fillStyle = color_hex_unpacked(r, g, b, a);
                     ctx.font = `${size}px Arial, Sans`;
                     ctx.fillText(txt, x, y);
                 },
-                TextFormat: () => {},
+                TextFormat: (txt_ptr, ...args) => {
+                    if (txt_ptr) {
+                        const buffer = wasm.instance.exports.memory.buffer;
+                        let txt =  cstr_by_ptr(buffer, txt_ptr);;
+                        const [r] = new Uint8Array(buffer, args, args.length);
+                        //console.log('frmt', txt, r);
+                        txt = txt.replace('%3i', r);
+                        
+                        // Encode the string in utf-8.
+                        const encoder = new TextEncoder()
+                        const bytes = encoder.encode(txt)
+                        // Reuse the base pointer 0, will not scale
+                        const buffer2 = new Uint8Array(wasm.instance.exports.memory.buffer, 0, bytes.byteLength + 1)
+                        buffer2.set(bytes)
+                        buffer2[bytes.byteLength] = 0;
+                        return buffer2;
+                    }
+                    return 0;
+                },
                 BeginDrawing: () => {},
                 EndDrawing: () => {},
                 IsKeyPressed: (key) => { 
@@ -173,7 +191,7 @@
             wasm = w;
             console.log(w);
             w.instance.exports.game_init();
-            
+            start();
         });
     </script>
 </body>
