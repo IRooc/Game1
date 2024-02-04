@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "libs/raylib.h"
 
 #define SHAPESIZE 5
@@ -62,14 +59,35 @@ int screenWidth = 800;
 int screenHeight = 600;
 float speedX = 1;
 float speedY = 1;
-float speedFactor = 0.01;
+float speedFactor = 0.4;
 float boxFactor = 0.01;
 
 int cellWidth = 0; //calculated every tick
 double gametime = 0;
 
+void* mymemset(void* dest, int c, long count)
+{
+    char* bytes = (char*)dest;
+    while(count--)
+    {
+        *bytes++ = (char)c;
+    }
+
+    return dest;
+}
+void* mymemcpy(void* dest, const void* src, long count)
+{
+    char* dest8 = (char*)dest;
+    const char* src8 = (const char*)src;
+    while(count--)
+    {
+        *dest8++ = *src8++;
+    }
+    return dest;
+}
+
 void StartNewEnemyWave() {
-    memset(&wave, 0, sizeof(wave));
+    mymemset(&wave, 0, sizeof(wave));
     wavenumber++;
 
     wave.pos.x = screenWidth * 0.25;
@@ -81,7 +99,7 @@ void StartNewEnemyWave() {
     for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
         Shape* enemy = &wave.enemies[i];
         enemy->active = true;
-        memcpy(&enemy->items, &enemyTemplate.items, sizeof(enemy->items));
+        mymemcpy(&enemy->items, &enemyTemplate.items, sizeof(enemy->items));
         enemy->pos.x = (i%4)*SHAPESIZE*cellWidth*2.1;
         enemy->pos.y = (i/4)*SHAPESIZE*cellWidth*2.1;
     }
@@ -161,27 +179,27 @@ int main(void) {
 
         // Player movement
         if (IsKeyDown(KEY_A)) {
-            player.pos.x -= speedX;
+            player.pos.x -= speedX*dt;
             if (player.pos.x < 0) player.pos.x = 0;
         }
         if (IsKeyDown(KEY_D)) {
-            player.pos.x += speedX;
+            player.pos.x += speedX*dt;
             if (player.pos.x  > screenWidth - SHAPESIZE*cellWidth) player.pos.x = screenWidth - SHAPESIZE*cellWidth;
         }
         if (IsKeyDown(KEY_W)) {
-            player.pos.y -= speedY;
+            player.pos.y -= speedY*dt;
             if (player.pos.y < 0) player.pos.y = 0;
         }
         if (IsKeyDown(KEY_S)) {
-            player.pos.y += speedY;
+            player.pos.y += speedY*dt;
             if (player.pos.y  > screenHeight - SHAPESIZE*cellWidth) player.pos.y = screenHeight - SHAPESIZE*cellWidth;
         }
 
         // Bullets
         for (int i = 0; i < MAX_BULLETS; i++){
             if (bullets[i].active) {
-                bullets[i].pos.x += bullets[i].speed.x;
-                bullets[i].pos.y += bullets[i].speed.y;
+                bullets[i].pos.x += bullets[i].speed.x*dt;
+                bullets[i].pos.y += bullets[i].speed.y*dt;
 
                 if (bullets[i].speed.y < 0) {
                     //player bullet check with enemies
@@ -232,7 +250,7 @@ int main(void) {
         }
 
         bool firedBullet = true;
-        if (player.active && IsKeyPressed (KEY_SPACE)) {
+        if (player.active && IsKeyPressed(KEY_SPACE)) {
             firedBullet = SpawnBullet(player.pos, CLITERAL(Vector2){ 0, -speedY}, BLUE);
         }
 
@@ -249,8 +267,8 @@ int main(void) {
         }
 
         if (enemiesPresent) {
-            wave.pos.x += wave.speed.x;
-            wave.pos.y += wave.speed.y;
+            wave.pos.x += wave.speed.x*dt;
+            wave.pos.y += wave.speed.y*dt;
             if (wave.pos.x < screenWidth*0.2 || wave.pos.x > screenWidth*0.4) {
                 wave.speed.x = -wave.speed.x;
             }
@@ -273,7 +291,7 @@ int main(void) {
                 DrawText("PRESS 'Q' TO START", 50, 120, 50, GREEN);
             }
         } else {
-            DrawText("YOU DIED,\nPRESS 'R' TO RESTART", 50, 120, 50, RED);
+            DrawText("YOU DIED,\n\n\nPRESS 'R' TO RESTART", 50, 120, 50, RED);
         }
         DrawText(TextFormat("SCORE %3i", score), 20, 20, 40, LIGHTGRAY);
         DrawText(TextFormat("WAVE %3i", wavenumber), 20, 60, 40, LIGHTGRAY);
