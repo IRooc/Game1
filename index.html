@@ -1,0 +1,45 @@
+<html>
+<head>
+    <title>Game1</title>
+</head>
+<body>
+    <canvas id="game"></canvas>
+    <button onclick="start()">Start</button>
+    <script>
+        function make_environment(...envs) {
+            return new Proxy(envs, {
+                get(target, prop, receiver) {
+                    for (let env of envs) {
+                        if (env.hasOwnProperty(prop)) {
+                            return env[prop];
+                        }
+                    }
+                    return (...args) => {console.error("NOT IMPLEMENTED: "+prop, args)}
+                }
+            });
+        }
+    
+    let wasm;    
+
+    async function start() {
+        wasm.instance.exports.main();                
+    }
+        
+    let n = 0;
+    WebAssembly.instantiateStreaming(fetch('main.wasm'), {
+        env: make_environment({
+            WindowShouldClose: () => {
+                return n++ > 0;
+            },
+            BeginDrawing: () => {
+                
+            }
+        })
+    }).then((w) =>{
+        wasm = w;
+        console.log(w);
+        
+    });
+    </script>
+</body>
+</html>
