@@ -4,8 +4,17 @@
 </head>
 <body>
     <canvas id="game"></canvas>
+    <button onclick="stop=true">Stop</button>
     <button onclick="start()">Start</button>
     <script>
+    
+        const canvas = document.getElementById("game");
+        ctx = canvas.getContext("2d");
+        var downKeys = {};
+        var pressedKeys = {};
+        window.onkeyup = function(e) { downKeys[e.keyCode] = false; pressedKeys[e.keyCode] = true; }
+        window.onkeydown = function(e) { downKeys[e.keyCode] = true; }
+    
         function make_environment(...envs) {
             return new Proxy(envs, {
                 get(target, prop, receiver) {
@@ -18,28 +27,154 @@
                 }
             });
         }
-    
-    let wasm;    
-
-    async function start() {
-        wasm.instance.exports.main();                
-    }
-        
-    let n = 0;
-    WebAssembly.instantiateStreaming(fetch('main.wasm'), {
-        env: make_environment({
-            WindowShouldClose: () => {
-                return n++ > 0;
-            },
-            BeginDrawing: () => {
-                
+        function cstrlen(mem, ptr) {
+            let len = 0;
+            while (mem[ptr] != 0) {
+                len++;
+                ptr++;
             }
-        })
-    }).then((w) =>{
-        wasm = w;
-        console.log(w);
+            return len;
+        }
         
-    });
+        function cstr_by_ptr(mem_buffer, ptr) {
+            const mem = new Uint8Array(mem_buffer);
+            const len = cstrlen(mem, ptr);
+            const bytes = new Uint8Array(mem_buffer, ptr, len);
+            return new TextDecoder().decode(bytes);
+        }
+        
+        function color_hex_unpacked(r, g, b, a) {
+            r = r.toString(16).padStart(2, '0');
+            g = g.toString(16).padStart(2, '0');
+            b = b.toString(16).padStart(2, '0');
+            a = a.toString(16).padStart(2, '0');
+            return "#"+r+g+b+a;
+        }
+        
+        function color_hex(color) {
+            const r = ((color>>(0*8))&0xFF).toString(16).padStart(2, '0');
+            const g = ((color>>(1*8))&0xFF).toString(16).padStart(2, '0');
+            const b = ((color>>(2*8))&0xFF).toString(16).padStart(2, '0');
+            const a = ((color>>(3*8))&0xFF).toString(16).padStart(2, '0');
+            return "#"+r+g+b+a;
+        }
+    
+        let wasm;    
+        let n = 0;
+        let dt = 0;
+        let previous = 0;
+        let stop = false;
+    
+        async function start() {
+            stop = false;
+            function first(timestamp) {
+                pressedKeys = {};
+                previous = timestamp;
+                window.requestAnimationFrame(next)
+            }
+            function next(timestamp) {
+                dt = (timestamp - previous)/1000.0;
+                previous = timestamp;
+                wasm.instance.exports.game_frame();
+                //reset pressed keys? Maybe?
+                pressedKeys = {};
+                if (!stop) window.requestAnimationFrame(next);
+                else console.log('stopped');
+            }
+            window.requestAnimationFrame(first);
+        }
+            
+        function draw(new_dt) {
+            dt = (new_dt/1000.0)+dt;
+            console.log('newdt', new_dt, dt);
+        }
+        WebAssembly.instantiateStreaming(fetch('main.wasm'), {
+            env: make_environment({
+                InitWindow: (width, height, title_ptr) => {
+                    ctx.canvas.width = width;
+                    ctx.canvas.height = height;
+                    const buffer = wasm.instance.exports.memory.buffer;
+                    document.title = cstr_by_ptr(buffer, title_ptr);
+                },
+                SetConfigFlags: (flag) => {
+                    console.log('SetConfigFlags', flag);
+                },
+                SetTargetFPS: (fps) => {
+                    console.log(`The game wants to run at ${fps} FPS, but in Web we gonna just ignore it.`);
+                },
+                GetScreenWidth: () => {
+                    return ctx.canvas.width;
+                },
+                GetScreenHeight: () => {
+                    return ctx.canvas.height;
+                },
+                GetRenderWidth: () => {
+                    return ctx.canvas.width;
+                },
+                GetRenderHeight: () => {
+                    return ctx.canvas.height;
+                },
+                WindowShouldClose: () => {
+                    return n++ > 20;
+                },
+                GetFrameTime: () => {
+                    return dt;
+                },
+                DrawText: (txt_ptr, x, y, size, color_ptr) => {
+                    const buffer = wasm.instance.exports.memory.buffer;
+                    const txt =  cstr_by_ptr(buffer, txt_ptr);;
+                    //console.log('draw text',txt_ptr, txt, x, y, size, color_ptr);
+                    const [r, g, b, a] = new Uint8Array(buffer, color_ptr, 4);
+                    ctx.fillStyle = color_hex_unpacked(r, g, b, a);
+                    ctx.font = `${size}px Arial, Sans`;
+                    ctx.fillText(txt, x, y);
+                },
+                TextFormat: () => {},
+                BeginDrawing: () => {},
+                EndDrawing: () => {},
+                IsKeyPressed: (key) => { 
+                    return pressedKeys[key] === true;
+                },
+                IsKeyDown: (key) => { 
+                    //console.log('iskeydown', key);
+                    return downKeys[key] === true;
+                },
+                GetRandomValue: (min, max) => {
+                    return Math.floor(Math.random()*(max-min) + min)
+                },
+                CheckCollisionRecs: (r1_ptr, r2_ptr) => {
+                    let collision = false;
+                    const buffer = wasm.instance.exports.memory.buffer;
+                    const [x1, y1, w1, h1] = new Float32Array(buffer, r1_ptr, 4);
+                    const [x2, y2, w2, h2] = new Float32Array(buffer, r2_ptr, 4);
+                    if ((x1 < (x2 + w2) && (x1 + w1) > x2) &&
+                        (y1 < (y2 + h2) && (y1 + h1) > y2)) collision = true;
+                    
+                    if (collision) {
+                        console.log('r1',x1,y1,w1,h1);
+                        console.log('r2',x2,y2,w2,h2);
+                    }
+                    return collision;
+                },
+                ClearBackground: (color_ptr) => {
+                    const buffer = wasm.instance.exports.memory.buffer;
+                    const [r, g, b, a] = new Uint8Array(buffer, color_ptr, 4);
+                    ctx.fillStyle = color_hex_unpacked(r, g, b, a);
+                    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                },
+                DrawRectangle(x,y,w,h,color_ptr) {
+                    const buffer = wasm.instance.exports.memory.buffer;
+                    const [r, g, b, a] = new Uint8Array(buffer, color_ptr, 4);
+                    ctx.fillStyle = color_hex_unpacked(r, g, b, a);
+                    ctx.fillRect(x,y,w,h);
+                },
+            })
+        }).then((w) =>{
+            wasm = w;
+            console.log(w);
+            w.instance.exports.game_init();
+            
+        });
     </script>
 </body>
 </html>

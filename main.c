@@ -144,7 +144,8 @@ bool SpawnBullet(Vector2 pos, Vector2 speed, Color color) {
     return false;
 }
 
-int main(void) {
+
+void game_init() {
     Color gridColor = CLITERAL(Color){ 180, 41, 55, 255 };
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
@@ -155,162 +156,173 @@ int main(void) {
     cellWidth = screenWidth * boxFactor;
     player.pos.y = screenHeight - SHAPESIZE*cellWidth;
     player.active = true;
+}
 
-    while(!WindowShouldClose()) {
-        dt = GetFrameTime();
-        gametime += dt;
-        screenWidth = GetRenderWidth();
-        screenHeight = GetRenderHeight();
-        cellWidth = screenWidth * boxFactor;
-        speedX = screenWidth * speedFactor;
-        speedY = screenHeight * speedFactor;
-        wave.currentTime += dt;
-
-        if (IsKeyPressed(KEY_Q)) {
-            StartNewEnemyWave();
-        }
-        if (IsKeyPressed(KEY_R)) {
-            player.pos.x = screenWidth*0.05;
-            player.active = true;
-            wavenumber = 0;
-            score = 0;
-            StartNewEnemyWave();
-        }
-
-        // Player movement
-        if (IsKeyDown(KEY_A)) {
-            player.pos.x -= speedX*dt;
-            if (player.pos.x < 0) player.pos.x = 0;
-        }
-        if (IsKeyDown(KEY_D)) {
-            player.pos.x += speedX*dt;
-            if (player.pos.x  > screenWidth - SHAPESIZE*cellWidth) player.pos.x = screenWidth - SHAPESIZE*cellWidth;
-        }
-        if (IsKeyDown(KEY_W)) {
-            player.pos.y -= speedY*dt;
-            if (player.pos.y < 0) player.pos.y = 0;
-        }
-        if (IsKeyDown(KEY_S)) {
-            player.pos.y += speedY*dt;
-            if (player.pos.y  > screenHeight - SHAPESIZE*cellWidth) player.pos.y = screenHeight - SHAPESIZE*cellWidth;
-        }
-
-        // Bullets
-        for (int i = 0; i < MAX_BULLETS; i++){
-            if (bullets[i].active) {
-                bullets[i].pos.x += bullets[i].speed.x*dt;
-                bullets[i].pos.y += bullets[i].speed.y*dt;
-
-                if (bullets[i].speed.y < 0) {
-                    //player bullet check with enemies
-                    for(int e = 0; e < ARRAY_LEN(wave.enemies); e++) {
-                        if (wave.enemies[e].active) {
-                            if (CheckCollisionRecs(CLITERAL(Rectangle){
-                                        bullets[i].pos.x,
-                                        bullets[i].pos.y,
-                                        cellWidth,
-                                        cellWidth
-                                        },
-                                        CLITERAL(Rectangle){
-                                        wave.pos.x + wave.enemies[e].pos.x,
-                                        wave.pos.y + wave.enemies[e].pos.y,
-                                        SHAPESIZE*cellWidth,
-                                        SHAPESIZE*cellWidth,
-                                        })){
-                                wave.enemies[e].active = false;
-                                bullets[i].active = false;
-                                score += 10;
-                            }
+void game_frame() {
+    dt = GetFrameTime();
+    gametime += dt;
+    screenWidth = GetRenderWidth();
+    screenHeight = GetRenderHeight();
+    cellWidth = screenWidth * boxFactor;
+    speedX = screenWidth * speedFactor;
+    speedY = screenHeight * speedFactor;
+    wave.currentTime += dt;
+    
+    if (IsKeyPressed(KEY_Q)) {
+        StartNewEnemyWave();
+    }
+    if (IsKeyPressed(KEY_R)) {
+        player.pos.x = screenWidth*0.05;
+        player.active = true;
+        wavenumber = 0;
+        score = 0;
+        StartNewEnemyWave();
+    }
+    
+    // Player movement
+    if (IsKeyDown(KEY_A)) {
+        player.pos.x -= speedX*dt;
+        if (player.pos.x < 0) player.pos.x = 0;
+    }
+    if (IsKeyDown(KEY_D)) {
+        player.pos.x += speedX*dt;
+        if (player.pos.x  > screenWidth - SHAPESIZE*cellWidth) player.pos.x = screenWidth - SHAPESIZE*cellWidth;
+    }
+    if (IsKeyDown(KEY_W)) {
+        player.pos.y -= speedY*dt;
+        if (player.pos.y < 0) player.pos.y = 0;
+    }
+    if (IsKeyDown(KEY_S)) {
+        player.pos.y += speedY*dt;
+        if (player.pos.y  > screenHeight - SHAPESIZE*cellWidth) player.pos.y = screenHeight - SHAPESIZE*cellWidth;
+    }
+    
+    // Bullets
+    for (int i = 0; i < MAX_BULLETS; i++){
+        if (bullets[i].active) {
+            bullets[i].pos.x += bullets[i].speed.x*dt;
+            bullets[i].pos.y += bullets[i].speed.y*dt;
+    
+            if (bullets[i].speed.y < 0) {
+                //player bullet check with enemies
+                for(int e = 0; e < ARRAY_LEN(wave.enemies); e++) {
+                    if (wave.enemies[e].active) {
+                        if (CheckCollisionRecs(CLITERAL(Rectangle){
+                                    bullets[i].pos.x,
+                                    bullets[i].pos.y,
+                                    cellWidth,
+                                    cellWidth
+                                    },
+                                    CLITERAL(Rectangle){
+                                    wave.pos.x + wave.enemies[e].pos.x,
+                                    wave.pos.y + wave.enemies[e].pos.y,
+                                    SHAPESIZE*cellWidth,
+                                    SHAPESIZE*cellWidth,
+                                    })){
+                            wave.enemies[e].active = false;
+                            bullets[i].active = false;
+                            score += 10;
                         }
                     }
-
-                } else if (bullets[i].speed.y > 0) {
-                    //enemy bullets check with player
-                    if (CheckCollisionRecs(CLITERAL(Rectangle){
-                                bullets[i].pos.x,
-                                bullets[i].pos.y,
-                                cellWidth,
-                                cellWidth
-                                },
-                                CLITERAL(Rectangle){
-                                player.pos.x,
-                                player.pos.y,
-                                SHAPESIZE*cellWidth,
-                                SHAPESIZE*cellWidth,
-                                })){
-                        player.active = false;
-                        bullets[i].active = false;
-                    }
                 }
-
-                if (bullets[i].pos.y < 0 || bullets[i].pos.y > screenHeight) {
+    
+            } else if (bullets[i].speed.y > 0) {
+                //enemy bullets check with player
+                if (CheckCollisionRecs(CLITERAL(Rectangle){
+                            bullets[i].pos.x,
+                            bullets[i].pos.y,
+                            cellWidth,
+                            cellWidth
+                            },
+                            CLITERAL(Rectangle){
+                            player.pos.x,
+                            player.pos.y,
+                            SHAPESIZE*cellWidth,
+                            SHAPESIZE*cellWidth,
+                            })){
+                    player.active = false;
                     bullets[i].active = false;
                 }
             }
-        }
-
-        bool firedBullet = true;
-        if (player.active && IsKeyPressed(KEY_SPACE)) {
-            firedBullet = SpawnBullet(player.pos, CLITERAL(Vector2){ 0, -speedY}, BLUE);
-        }
-
-        // Enemies
-        bool enemiesPresent = false;
-        for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
-            if (wave.enemies[i].active) {
-                enemiesPresent = true;
-                //fire bullet sometimes
-                if (GetRandomValue(0,500) < wavenumber) {
-                    SpawnBullet(AddVector2(wave.pos, wave.enemies[i].pos), CLITERAL(Vector2){ 0, speedY}, RED);
-                }
+    
+            if (bullets[i].pos.y < 0 || bullets[i].pos.y > screenHeight) {
+                bullets[i].active = false;
             }
         }
-
-        if (enemiesPresent) {
-            wave.pos.x += wave.speed.x*dt;
-            wave.pos.y += wave.speed.y*dt;
-            if (wave.pos.x < screenWidth*0.2 || wave.pos.x > screenWidth*0.4) {
-                wave.speed.x = -wave.speed.x;
-            }
-        }
-
-        // RENDERING
-        BeginDrawing();
-        ClearBackground(BLACK);
-
-
-        for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
-            if (wave.enemies[i].active) {
-                DrawShape(wave.enemies[i], wave.pos);
-            }
-        }
-
-        if (player.active) {
-            DrawShape(player, CLITERAL(Vector2){0,0});
-            if (!enemiesPresent) {
-                DrawText("PRESS 'Q' TO START", 50, 120, 50, GREEN);
-            }
-        } else {
-            DrawText("YOU DIED,\n\n\nPRESS 'R' TO RESTART", 50, 120, 50, RED);
-        }
-        DrawText(TextFormat("SCORE %3i", score), 20, 20, 40, LIGHTGRAY);
-        DrawText(TextFormat("WAVE %3i", wavenumber), 20, 60, 40, LIGHTGRAY);
-
-        // Draw bullets
-        for (int i = 0; i < MAX_BULLETS; i++){
-            if (bullets[i].active) {
-                DrawRectangle(bullets[i].pos.x,bullets[i].pos.y,cellWidth, cellWidth, bullets[i].color);
-            }
-        }
-
-        if (!firedBullet) {
-            TraceLog(LOG_ERROR, "FAILED TO FIRE BULLET");
-        }
-
-        EndDrawing();
+    }
+    
+    bool firedBullet = true;
+    if (player.active && IsKeyPressed(KEY_SPACE)) {
+        firedBullet = SpawnBullet(player.pos, CLITERAL(Vector2){ 0, -speedY}, BLUE);
     }
 
-    CloseWindow();
+    // Enemies
+    bool enemiesPresent = false;
+    for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
+        if (wave.enemies[i].active) {
+            enemiesPresent = true;
+            //fire bullet sometimes
+            if (GetRandomValue(0,500) < wavenumber) {
+                SpawnBullet(AddVector2(wave.pos, wave.enemies[i].pos), CLITERAL(Vector2){ 0, speedY}, RED);
+            }
+        }
+    }
+    
+    if (enemiesPresent) {
+        wave.pos.x += wave.speed.x*dt;
+        wave.pos.y += wave.speed.y*dt;
+        if (wave.pos.x < screenWidth*0.2 || wave.pos.x > screenWidth*0.4) {
+            wave.speed.x = -wave.speed.x;
+        }
+    }
+    
+    // RENDERING
+    BeginDrawing();
+        ClearBackground((Color){20, 20, 20, 255});
+    
+    
+    for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
+        if (wave.enemies[i].active) {
+            DrawShape(wave.enemies[i], wave.pos);
+        }
+    }
+    
+    if (player.active) {
+        DrawShape(player, CLITERAL(Vector2){0,0});
+        if (!enemiesPresent) {
+            DrawText("PRESS 'Q' TO START", 50, 120, 50, GREEN);
+        }
+        } else {
+        DrawText("YOU DIED,\n\n\nPRESS 'R' TO RESTART", 50, 120, 50, RED);
+        }
+    DrawText(TextFormat("SCORE %3i", score), 20, 20, 40, LIGHTGRAY);
+    DrawText(TextFormat("WAVE %3i", wavenumber), 20, 60, 40, LIGHTGRAY);
+    
+    // Draw bullets
+    for (int i = 0; i < MAX_BULLETS; i++){
+        if (bullets[i].active) {
+            DrawRectangle(bullets[i].pos.x,bullets[i].pos.y,cellWidth, cellWidth, bullets[i].color);
+        }
+    }
+    
+    if (!firedBullet) {
+        TraceLog(LOG_ERROR, "FAILED TO FIRE BULLET");
+        }
+    
+    EndDrawing();
+}
 
+void game_over()
+{
+    CloseWindow();
+}
+
+int main()
+{
+    game_init();
+    while (!WindowShouldClose()) {
+        game_frame();
+    }
+    game_over();
     return 0;
 }
