@@ -23,6 +23,10 @@
             height: 60px;
             width: 100px;
         }
+        @font-face {
+            font-family: raylib;
+            src: url(acme_7_wide_xtnd.woff);
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -176,8 +180,9 @@
                     const [r, g, b, a] = new Uint8Array(buffer, color_ptr, 4);
                     ctx.fillStyle = color_hex_unpacked(r, g, b, a);
                     //TODO: not correct but works for now
-                    ctx.font = `${size}px Arial, Sans`;
-                    ctx.fillText(txt, x, y + 20); //some offset apparently needed for text TODO look into this
+                    size = size*0.6;
+                    ctx.font = `${size}px raylib`;
+                    ctx.fillText(txt, x, y + size); //some offset apparently needed for text TODO look into this
                 },
                 TextFormat: (txt_ptr, ...args) => {
                     if (txt_ptr) {
