@@ -182,7 +182,10 @@
                     //TODO: not correct but works for now
                     size = size*0.6;
                     ctx.font = `${size}px raylib`;
-                    ctx.fillText(txt, x, y + size); //some offset apparently needed for text TODO look into this
+                    const lines = txt.split('\n');
+                    for (let i = 0; i < lines.length; i++){
+                        ctx.fillText(lines[i], x, y + size + i*size); 
+                    }
                 },
                 TextFormat: (txt_ptr, ...args) => {
                     if (txt_ptr) {
