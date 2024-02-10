@@ -2,3 +2,6 @@
 *.obj
 *.pdb
 *.ilk
+main
+*.dSYM
+.DS_Store

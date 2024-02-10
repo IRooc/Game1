@@ -151,8 +151,8 @@ void game_init() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "Game 1");
     SetTargetFPS(60);
-    screenWidth = GetRenderWidth();
-    screenHeight = GetRenderHeight();
+    screenWidth = GetScreenWidth();
+    screenHeight = GetScreenHeight();
     cellWidth = screenWidth * boxFactor;
     player.pos.y = screenHeight - SHAPESIZE*cellWidth;
     player.active = true;
@@ -161,8 +161,8 @@ void game_init() {
 void game_frame() {
     dt = GetFrameTime();
     gametime += dt;
-    screenWidth = GetRenderWidth();
-    screenHeight = GetRenderHeight();
+    screenWidth = GetScreenWidth();
+    screenHeight = GetScreenHeight();
     cellWidth = screenWidth * boxFactor;
     speedX = screenWidth * speedFactor;
     speedY = screenHeight * speedFactor;
