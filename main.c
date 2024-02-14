@@ -61,6 +61,7 @@ float speedX = 1;
 float speedY = 1;
 float speedFactor = 0.4;
 float boxFactor = 0.01;
+bool enemiesPresent = false;
 
 int cellWidth = 0; //calculated every tick
 double gametime = 0;
@@ -168,7 +169,7 @@ void game_frame() {
     speedY = screenHeight * speedFactor;
     wave.currentTime += dt;
     
-    if (IsKeyPressed(KEY_Q)) {
+    if (!enemiesPresent && IsKeyPressed(KEY_Q)) {
         StartNewEnemyWave();
     }
     if (IsKeyPressed(KEY_R)) {
@@ -257,7 +258,7 @@ void game_frame() {
     }
 
     // Enemies
-    bool enemiesPresent = false;
+    enemiesPresent = false;
     for(int i = 0; i < ARRAY_LEN(wave.enemies); i++) {
         if (wave.enemies[i].active) {
             enemiesPresent = true;
